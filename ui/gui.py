@@ -120,7 +120,7 @@ class FinanceApp:
         PaymentMethodsWindow(payment_methods_window, self.finance_manager, self.refresh_ui)
 
 if __name__ == "__main__":
-    initialize_database()  # Ensure database is initialized
+    initialize_database()  
     root = tk.Tk()
     app = FinanceApp(root)
     root.mainloop()

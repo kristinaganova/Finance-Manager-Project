@@ -87,8 +87,8 @@ class TransactionWindow:
             payment_method = self.payment_method_combobox.get()
             currency = self.currency_entry.get()
             self.transaction_manager.add_transaction(date, category, amount, transaction_type, payment_method, currency)
-            self.update_transactions_tree()  # Update the transactions tree after adding a transaction
-            self.refresh_ui_callback()  # Refresh the main UI
+            self.update_transactions_tree() 
+            self.refresh_ui_callback() 
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
@@ -97,8 +97,8 @@ class TransactionWindow:
             selected_item = self.transactions_tree.selection()[0]
             transaction_id = self.transactions_tree.item(selected_item)['values'][0]
             self.transaction_manager.remove_transaction(transaction_id)
-            self.update_transactions_tree()  # Update the transactions tree after deleting a transaction
-            self.refresh_ui_callback()  # Refresh the main UI
+            self.update_transactions_tree()  
+            self.refresh_ui_callback()  
         except IndexError:
             messagebox.showerror("Error", "No transaction selected")
 

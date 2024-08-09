@@ -63,8 +63,8 @@ class PaymentMethodsWindow:
                 self.method_name_entry.delete(0, tk.END)
                 self.method_type_combobox.set("")
                 self.initial_balance_entry.delete(0, tk.END)
-                self.update_methods_tree()  # Update the methods tree after adding a new method
-                self.refresh_ui_callback()  # Refresh the main UI
+                self.update_methods_tree()  
+                self.refresh_ui_callback()  
             except Exception as e:
                 messagebox.showerror("Error", str(e))
         else:
@@ -75,8 +75,8 @@ class PaymentMethodsWindow:
             selected_item = self.methods_tree.selection()[0]
             method_name = self.methods_tree.item(selected_item, 'values')[0]
             self.account_manager.remove_payment_method(method_name)
-            self.update_methods_tree()  # Update the methods tree after deleting a method
-            self.refresh_ui_callback()  # Refresh the main UI
+            self.update_methods_tree() 
+            self.refresh_ui_callback()  
         except IndexError:
             messagebox.showerror("Error", "No payment method selected")
 
@@ -84,7 +84,5 @@ class PaymentMethodsWindow:
         for item in self.methods_tree.get_children():
             self.methods_tree.delete(item)
         for row in self.account_manager.get_payment_methods_with_balance():
-            # Round the balance to 2 decimal places before inserting
             rounded_balance = round(row[2], 2)
             self.methods_tree.insert("", "end", values=(row[0], row[1], rounded_balance))
-

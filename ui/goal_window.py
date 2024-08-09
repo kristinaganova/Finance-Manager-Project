@@ -70,7 +70,7 @@ class GoalWindow:
     def delete_goal(self):
         try:
             selected_item = self.goals_tree.selection()[0]
-            goal_id = self.goals_tree.item(selected_item, 'values')[0]  # Assuming the first column is the goal ID
+            goal_id = self.goals_tree.item(selected_item, 'values')[0]  
             self.goal_manager.delete_goal(goal_id)
             self.update_goals_tree()  # Refresh the tree after deletion
         except IndexError:
