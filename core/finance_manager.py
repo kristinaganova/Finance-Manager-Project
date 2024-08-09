@@ -6,6 +6,12 @@ from account_manager import AccountManager
 from transaction_manager import TransactionManager
 from goal_manager import GoalManager
 from datetime import datetime
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+from sklearn.linear_model import LinearRegression
+import numpy as np
+import pandas as pd
 
 class FinanceManager:
     def __init__(self):
@@ -245,14 +251,56 @@ class FinanceManager:
         ''', (self.current_user.user_id,))
         return self.cursor.fetchall()
 
-    def calculate_statistics(self, target_currency='BGN'):
-        return self.transaction_manager.calculate_statistics(target_currency)
+    # def calculate_statistics(self, target_currency='BGN'):
+    #     return self.transaction_manager.calculate_statistics(target_currency)
 
-    def calculate_correlations(self, target_currency='BGN'):
-        return self.transaction_manager.calculate_correlations(target_currency)
+    # def calculate_correlations(self, target_currency='BGN'):
+    #     return self.transaction_manager.calculate_correlations(target_currency)
 
-    def forecast(self, days_ahead=30, target_currency='BGN'):
-        return self.transaction_manager.forecast(days_ahead, target_currency)
+    # def forecast(self, days_ahead=30, target_currency='BGN'):
+    #     return self.transaction_manager.forecast(days_ahead, target_currency)
+    
+    def perform_regression_analysis(self):
+        transactions = self.get_transactions(target_currency='BGN')
+        dates = [pd.to_datetime(t[1]).toordinal() for t in transactions]
+        amounts = [t[3] for t in transactions]
+        
+        X = np.array(dates).reshape(-1, 1)
+        y = np.array(amounts)
+        
+        model = LinearRegression()
+        model.fit(X, y)
+        
+        future_dates = np.array([pd.Timestamp('today').toordinal() + i for i in range(30)]).reshape(-1, 1)
+        future_predictions = model.predict(future_dates)
+        
+        return future_dates, future_predictions
+
+    def perform_clustering(self):
+        transactions = self.get_transactions(target_currency='BGN')
+        features = [(t[3], 1 if t[4] == 'Income' else 0) for t in transactions]
+        features = np.array(features)
+        
+        kmeans = KMeans(n_clusters=3)
+        kmeans.fit(features)
+        
+        clusters = kmeans.predict(features)
+        clustered_transactions = [(t, cluster) for t, cluster in zip(transactions, clusters)]
+        
+        return clustered_transactions
+
+    def perform_correlation_analysis(self):
+        transactions = self.get_transactions(target_currency='BGN')
+        df = pd.DataFrame(transactions, columns=['ID', 'Date', 'Category', 'Amount', 'Type', 'Currency', 'Payment Method'])
+        pivot_table = df.pivot_table(values='Amount', index='Date', columns='Category', aggfunc='sum').fillna(0)
+        
+        correlations = pivot_table.corr()
+        return correlations
+
+    def visualize_correlations(self, correlations):
+        sns.heatmap(correlations, annot=True, cmap='coolwarm')
+        plt.title('Correlation Matrix')
+        plt.show()
 
     def __del__(self):
         self.conn.close()
