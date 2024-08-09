@@ -14,12 +14,9 @@ class TransactionWindow:
 
         self.create_widgets()
 
-    # Rest of the code remains the same
-
     def update_payment_methods_combobox(self):
         payment_methods = self.account_manager.get_payment_methods()
         self.payment_method_combobox['values'] = payment_methods
-
 
     def create_widgets(self):
         main_frame = ttk.Frame(self.root)
@@ -106,11 +103,9 @@ class TransactionWindow:
             messagebox.showerror("Error", "No transaction selected")
 
     def update_transactions_tree(self):
-        # Clear existing rows
         for item in self.transactions_tree.get_children():
             self.transactions_tree.delete(item)
 
-        # Populate with current transactions
         transactions_df = self.transaction_manager.get_transactions()
         for index, row in transactions_df.iterrows():
             self.transactions_tree.insert("", "end", values=(row['ID'], row['Date'], row['Category'], row['Amount'], row['Type'], row['Currency'], row['Payment Method']))
