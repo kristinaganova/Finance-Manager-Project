@@ -72,7 +72,7 @@ class GoalWindow:
             selected_item = self.goals_tree.selection()[0]
             goal_id = self.goals_tree.item(selected_item, 'values')[0]  
             self.goal_manager.delete_goal(goal_id)
-            self.update_goals_tree()  # Refresh the tree after deletion
+            self.update_goals_tree()  
         except IndexError:
             messagebox.showerror("Error", "No goal selected")
             
@@ -81,7 +81,7 @@ class GoalWindow:
             selected_item = self.goals_tree.selection()[0]
             goal_id = self.goals_tree.item(selected_item, 'values')[0]
             self.goal_manager.mark_goal_complete(goal_id)
-            self.update_goals_tree()  # Refresh the tree after marking complete
+            self.update_goals_tree() 
         except IndexError:
             messagebox.showerror("Error", "No goal selected")
 
