@@ -37,7 +37,7 @@ class AccountManager:
         methods = ['cash'] + list(self.accounts['cards'].keys())
         return methods
 
-    def add_payment_method(self, method_name, method_type, initial_balance=Decimal('0.00')):
+    def add_payment_method(self, method_name, initial_balance=Decimal('0.00')):
         if method_name in self.accounts['cards']:
             print("Payment method already exists.")
         else:

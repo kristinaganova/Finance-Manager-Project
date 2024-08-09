@@ -3,12 +3,11 @@ from decimal import Decimal
 from datetime import datetime, timedelta
 
 class TransactionManager:
-    def __init__(self, currency_converter, account_manager):
+    def __init__(self, currency_converter):
         self.transactions = pd.DataFrame(columns=['Date', 'Category', 'Amount', 'Type', 'Currency', 'Payment Method'])
         self.currency_converter = currency_converter
-        self.account_manager = account_manager
 
-    def add_transaction(self, date, category, amount, transaction_type, payment_method, currency='BGN'):
+    def add_transaction(self, date, category, amount, transaction_type, payment_method, currency='USD'):
         if not isinstance(amount, Decimal):
             amount = Decimal(str(amount))
         new_transaction = pd.DataFrame({
@@ -27,8 +26,8 @@ class TransactionManager:
         else:
             print("Transaction not found.")
 
-    def get_transactions(self, target_currency='BGN'):
-        if target_currency == 'BGN':
+    def get_transactions(self, target_currency='USD'):
+        if target_currency == 'USD':
             return self.transactions
         converted_transactions = self.transactions.copy()
         converted_transactions['Amount'] = converted_transactions.apply(
@@ -36,28 +35,28 @@ class TransactionManager:
         converted_transactions['Currency'] = target_currency
         return converted_transactions
 
-    def calculate_statistics(self, target_currency='BGN'):
+    def calculate_statistics(self, target_currency='USD'):
         transactions = self.get_transactions(target_currency)
         expenses = transactions[transactions['Type'] == 'Expense']['Amount']
         income = transactions[transactions['Type'] == 'Income']['Amount']
         stats = {
-            'Mean Expense': round(sum(expenses, Decimal(0)) / len(expenses), 2) if len(expenses) > 0 else Decimal(0),
-            'Median Expense': round(sorted(expenses)[len(expenses) // 2], 2) if len(expenses) > 0 else Decimal(0),
-            'Std Dev Expense': round((sum((x - (sum(expenses, Decimal(0)) / len(expenses))) ** 2 for x in expenses) / len(expenses)).sqrt(), 2) if len(expenses) > 0 else Decimal(0),
-            'Mean Income': round(sum(income, Decimal(0)) / len(income), 2) if len(income) > 0 else Decimal(0),
-            'Median Income': round(sorted(income)[len(income) // 2], 2) if len(income) > 0 else Decimal(0),
-            'Std Dev Income': round((sum((x - (sum(income, Decimal(0)) / len(income))) ** 2 for x in income) / len(income)).sqrt(), 2) if len(income) > 0 else Decimal(0),
+            'Mean Expense': sum(expenses, Decimal(0)) / len(expenses) if len(expenses) > 0 else Decimal(0),
+            'Median Expense': sorted(expenses)[len(expenses) // 2] if len(expenses) > 0 else Decimal(0),
+            'Std Dev Expense': (sum((x - (sum(expenses, Decimal(0)) / len(expenses))) ** 2 for x in expenses) / len(expenses)).sqrt() if len(expenses) > 0 else Decimal(0),
+            'Mean Income': sum(income, Decimal(0)) / len(income) if len(income) > 0 else Decimal(0),
+            'Median Income': sorted(income)[len(income) // 2] if len(income) > 0 else Decimal(0),
+            'Std Dev Income': (sum((x - (sum(income, Decimal(0)) / len(income))) ** 2 for x in income) / len(income)).sqrt() if len(income) > 0 else Decimal(0),
         }
         return stats
 
-    def calculate_correlations(self, target_currency='BGN'):
+    def calculate_correlations(self, target_currency='USD'):
         transactions = self.get_transactions(target_currency)
         expenses = transactions[transactions['Type'] == 'Expense']
         expenses_by_category = expenses.pivot_table(values='Amount', index='Date', columns='Category', aggfunc='sum', fill_value=Decimal(0))
         correlations = expenses_by_category.corr()
         return correlations
 
-    def forecast(self, days_ahead=30, target_currency='BGN'):
+    def forecast(self, days_ahead=30, target_currency='USD'):
         transactions = self.get_transactions(target_currency)
         transactions['Date_ordinal'] = transactions['Date'].apply(lambda x: x.toordinal())
 

@@ -22,7 +22,7 @@ class GoalManager:
         if index in self.goals.index:
             self.goals.at[index, 'Current Amount'] += amount
         else:
-            raise IndexError("Goal not found.")
+            print("Goal not found.")
 
     def get_goals(self):
         return self.goals
