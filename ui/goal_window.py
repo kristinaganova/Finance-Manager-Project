@@ -8,6 +8,7 @@ class GoalWindow:
         self.root = root
         self.root.title("Manage Goals")
         self.goal_manager = finance_manager.goal_manager
+        self.account_manager = finance_manager.account_manager
 
         self.create_widgets()
 
@@ -33,9 +34,27 @@ class GoalWindow:
 
         ttk.Button(frame_goals, text="Add Goal", command=self.add_goal).grid(row=3, column=0, columnspan=2, padx=5, pady=5)
 
+        # Frame for updating the current amount saved towards a goal
+        frame_update_amount = ttk.LabelFrame(main_frame, text="Update Saved Amount")
+        frame_update_amount.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
+
+        ttk.Label(frame_update_amount, text="Goal ID:").grid(row=0, column=0, padx=5, pady=5)
+        self.goal_id_entry = ttk.Entry(frame_update_amount, width=12)
+        self.goal_id_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        ttk.Label(frame_update_amount, text="Amount to Add:").grid(row=1, column=0, padx=5, pady=5)
+        self.amount_entry = ttk.Entry(frame_update_amount, width=12)
+        self.amount_entry.grid(row=1, column=1, padx=5, pady=5)
+
+        ttk.Label(frame_update_amount, text="Payment Method:").grid(row=2, column=0, padx=5, pady=5)
+        self.payment_method_combobox = ttk.Combobox(frame_update_amount, values=self.account_manager.get_payment_methods(), width=12)
+        self.payment_method_combobox.grid(row=2, column=1, padx=5, pady=5)
+
+        ttk.Button(frame_update_amount, text="Add to Goal", command=self.add_money_to_goal).grid(row=3, column=0, columnspan=2, padx=5, pady=5)
+
         # Frame for displaying goals
         frame_display = ttk.LabelFrame(main_frame, text="Goals")
-        frame_display.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
+        frame_display.grid(row=3, column=0, padx=10, pady=10, sticky="ew")
 
         self.goals_tree = ttk.Treeview(frame_display, columns=("ID", "Goal", "Target Amount", "Current Amount", "Due Date", "Completed"), show="headings", height=5)
         self.goals_tree.heading("ID", text="ID")
@@ -64,6 +83,27 @@ class GoalWindow:
             due_date = self.due_date_entry.get_date()
             self.goal_manager.add_goal(goal, target_amount, due_date)
             self.update_goals_tree()
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+    
+    #to be implemented and fixed..
+    def add_money_to_goal(self):
+        try:
+            goal_id = int(self.goal_id_entry.get())
+            amount_to_add = Decimal(self.amount_entry.get())
+            payment_method = self.payment_method_combobox.get()
+
+            # Withdraw from payment method
+            self.account_manager.update_balance(payment_method, -amount_to_add, "Expense")
+
+            # Add to the goal
+            self.goal_manager.update_goal(goal_id, amount_to_add)
+
+            messagebox.showinfo("Success", f"Added {amount_to_add} to goal ID {goal_id} from {payment_method}.")
+            self.update_goals_tree()
+            self.refresh_ui_callback()  # Refresh the main UI
+
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
@@ -96,4 +136,4 @@ class GoalWindow:
             self.goals_tree.insert(
                 "", "end", 
                 values=(row['ID'], row['Goal'], row['Target Amount'], row['Current Amount'], row['Due Date'], completed_text)
-        )
+            )

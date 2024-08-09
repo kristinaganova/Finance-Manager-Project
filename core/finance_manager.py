@@ -15,6 +15,7 @@ class FinanceManager:
         self.account_manager = None
         self.transaction_manager = None
         self.goal_manager = None
+        self.visualizer = Visualizer()
         self.currency_converter = CurrencyConverter()
 
     def set_user(self, user):

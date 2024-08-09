@@ -51,16 +51,16 @@ class TransactionManager:
 
     def calculate_statistics(self, target_currency='BGN'):
         transactions = self.get_transactions(target_currency)
-        expenses = transactions[transactions['Type'] == 'Expense']['Amount']
-        income = transactions[transactions['Type'] == 'Income']['Amount']
+        expenses = transactions[transactions['Type'] == 'Expense']['Amount'].apply(Decimal)
+        income = transactions[transactions['Type'] == 'Income']['Amount'].apply(Decimal)
 
         stats = {
-            'Mean Expense': round(sum(expenses, Decimal(0)) / len(expenses), 2) if len(expenses) > 0 else Decimal(0),
+            'Mean Expense': round(sum(expenses) / len(expenses), 2) if len(expenses) > 0 else Decimal(0),
             'Median Expense': round(sorted(expenses)[len(expenses) // 2], 2) if len(expenses) > 0 else Decimal(0),
-            'Std Dev Expense': round((sum((x - (sum(expenses, Decimal(0)) / len(expenses))) ** 2 for x in expenses) / len(expenses)).sqrt(), 2) if len(expenses) > 0 else Decimal(0),
-            'Mean Income': round(sum(income, Decimal(0)) / len(income), 2) if len(income) > 0 else Decimal(0),
+            'Std Dev Expense': round((sum((x - (sum(expenses) / len(expenses))) ** 2 for x in expenses) / len(expenses)).sqrt(), 2) if len(expenses) > 0 else Decimal(0),
+            'Mean Income': round(sum(income) / len(income), 2) if len(income) > 0 else Decimal(0),
             'Median Income': round(sorted(income)[len(income) // 2], 2) if len(income) > 0 else Decimal(0),
-            'Std Dev Income': round((sum((x - (sum(income, Decimal(0)) / len(income))) ** 2 for x in income) / len(income)).sqrt(), 2) if len(income) > 0 else Decimal(0),
+            'Std Dev Income': round((sum((x - (sum(income) / len(income))) ** 2 for x in income) / len(income)).sqrt(), 2) if len(income) > 0 else Decimal(0),
         }
         return stats
 
