@@ -1,18 +1,19 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from core.finance_manager import FinanceManager
-from core.user import User
+from finance_manager import FinanceManager
+from user import User
 from decimal import Decimal
-from .transaction_window import TransactionWindow
-from .goal_window import GoalWindow
-from .visualization_window import VisualizationWindow
-from utils.initialize_database import initialize_database
-from .payment_method_window import PaymentMethodsWindow
+from transaction_window import TransactionWindow
+from goal_window import GoalWindow
+from visualization_window import VisualizationWindow
+from initialize_database import initialize_database
+from payment_method_window import PaymentMethodsWindow
 
 class FinanceApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Finance Manager")
+
         # Load data
         self.finance_manager = FinanceManager()
 
@@ -70,7 +71,7 @@ class FinanceApp:
         self.total_balance_label.grid(row=0, column=1, padx=10, pady=10)
 
         ttk.Label(main_frame, text="Cash Balance:").grid(row=1, column=0, padx=10, pady=10)
-        self.cash_balance_label = ttk.Label(main_frame, text=str(round(self.calculate_total_cash_balance(), 2)))
+        self.cash_balance_label = ttk.Label(main_frame, text=str(round(self.finance_manager.get_balances()['cash'], 2)))
         self.cash_balance_label.grid(row=1, column=1, padx=10, pady=10)
 
         ttk.Label(main_frame, text="Card Balance:").grid(row=2, column=0, padx=10, pady=10)
@@ -81,31 +82,27 @@ class FinanceApp:
         ttk.Button(main_frame, text="Manage Goals", command=self.open_goal_window).grid(row=3, column=1, padx=10, pady=10)
         ttk.Button(main_frame, text="Reports and Charts", command=self.open_visualization_window).grid(row=3, column=2, padx=10, pady=10)
         ttk.Button(main_frame, text="Manage Payment Methods", command=self.open_payment_methods_window).grid(row=3, column=3, padx=10, pady=10)
+
         self.refresh_ui()
 
     def refresh_ui(self):
         self.total_balance_label.config(text=str(round(self.calculate_total_balance(), 2)))
-        self.cash_balance_label.config(text=str(round(self.calculate_total_cash_balance(), 2)))
+        self.cash_balance_label.config(text=str(round(self.finance_manager.get_balances()['cash'], 2)))
         self.cards_balance_label.config(text=str(round(self.calculate_total_card_balance(), 2)))
 
     def calculate_total_balance(self):
         balances = self.finance_manager.get_balances()
-        total = sum(balances['cash'].values()) + sum(balances['cards'].values())
+        total = balances['cash'] + sum(balances['cards'].values())
         return total
 
     def calculate_total_card_balance(self):
         balances = self.finance_manager.get_balances()
         total = sum(balances['cards'].values())
         return total
-    
-    def calculate_total_cash_balance(self):
-        balances = self.finance_manager.get_balances()
-        total = sum(balances['cash'].values())
-        return total
 
     def open_transaction_window(self):
         transaction_window = tk.Toplevel(self.root)
-        TransactionWindow(transaction_window, self.finance_manager.transaction_manager, self.finance_manager.account_manager, self.refresh_ui)
+        TransactionWindow(transaction_window, self.finance_manager, self.refresh_ui)
 
     def open_goal_window(self):
         goal_window = tk.Toplevel(self.root)

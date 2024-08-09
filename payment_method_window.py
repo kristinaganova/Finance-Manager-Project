@@ -1,12 +1,13 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+from finance_manager import FinanceManager
 from decimal import Decimal
 
 class PaymentMethodsWindow:
     def __init__(self, root, finance_manager, refresh_ui_callback):
         self.root = root
         self.root.title("Manage Payment Methods")
-        self.account_manager = finance_manager.account_manager
+        self.finance_manager = finance_manager
         self.refresh_ui_callback = refresh_ui_callback
 
         self.create_widgets()
@@ -58,7 +59,7 @@ class PaymentMethodsWindow:
         if method_name and method_type in ["cash", "card"]:
             try:
                 initial_balance_decimal = Decimal(initial_balance)
-                self.account_manager.add_payment_method(method_name, method_type, initial_balance=initial_balance_decimal)
+                self.finance_manager.add_payment_method(method_name, method_type, initial_balance=initial_balance_decimal)
                 messagebox.showinfo("Success", f"Payment method '{method_name}' added successfully.")
                 self.method_name_entry.delete(0, tk.END)
                 self.method_type_combobox.set("")
@@ -74,7 +75,7 @@ class PaymentMethodsWindow:
         try:
             selected_item = self.methods_tree.selection()[0]
             method_name = self.methods_tree.item(selected_item, 'values')[0]
-            self.account_manager.remove_payment_method(method_name)
+            self.finance_manager.remove_payment_method(method_name)
             self.update_methods_tree()  # Update the methods tree after deleting a method
             self.refresh_ui_callback()  # Refresh the main UI
         except IndexError:
@@ -83,8 +84,5 @@ class PaymentMethodsWindow:
     def update_methods_tree(self):
         for item in self.methods_tree.get_children():
             self.methods_tree.delete(item)
-        for row in self.account_manager.get_payment_methods_with_balance():
-            # Round the balance to 2 decimal places before inserting
-            rounded_balance = round(row[2], 2)
-            self.methods_tree.insert("", "end", values=(row[0], row[1], rounded_balance))
-
+        for row in self.finance_manager.get_payment_methods_with_balance():
+            self.methods_tree.insert("", "end", values=row)

@@ -1,45 +1,59 @@
 import pandas as pd
 from decimal import Decimal
 from datetime import datetime, timedelta
+import sqlite3
+from utils.initialize_database import DATABASE_PATH
 
 class TransactionManager:
-    def __init__(self, currency_converter, account_manager):
-        self.transactions = pd.DataFrame(columns=['Date', 'Category', 'Amount', 'Type', 'Currency', 'Payment Method'])
+    def __init__(self, conn, user, currency_converter=None):
+        self.conn = conn
+        self.cursor = self.conn.cursor()
+        self.user = user
         self.currency_converter = currency_converter
-        self.account_manager = account_manager
+        self.transactions = self.load_transactions()
+
+    def load_transactions(self):
+        self.cursor.execute('''
+            SELECT t.id, t.date, t.category, t.amount, t.type, t.currency, pm.method_name
+            FROM transactions t
+            JOIN payment_methods pm ON t.payment_method_id = pm.id
+            WHERE t.user_id = ?
+        ''', (self.user.user_id,))
+        transactions = self.cursor.fetchall()
+
+        transactions_df = pd.DataFrame(transactions, columns=['ID', 'Date', 'Category', 'Amount', 'Type', 'Currency', 'Payment Method'])
+        return transactions_df
+
+    def remove_transaction(self, transaction_id):
+        if self.user is None:
+            raise ValueError("No user logged in")
+        self.cursor.execute('''
+            DELETE FROM transactions
+            WHERE id = ? AND user_id = ?
+        ''', (transaction_id, self.user.user_id))
+        self.conn.commit()
 
     def add_transaction(self, date, category, amount, transaction_type, payment_method, currency='BGN'):
-        if not isinstance(amount, Decimal):
-            amount = Decimal(str(amount))
-        new_transaction = pd.DataFrame({
-            'Date': [date], 
-            'Category': [category], 
-            'Amount': [amount], 
-            'Type': [transaction_type], 
-            'Currency': [currency], 
-            'Payment Method': [payment_method]
-        })
-        self.transactions = pd.concat([self.transactions, new_transaction], ignore_index=True)
-
-    def remove_transaction(self, index):
-        if index in self.transactions.index:
-            self.transactions = self.transactions.drop(index)
-        else:
-            print("Transaction not found.")
+        if self.user is None:
+            raise ValueError("No user logged in")
+        self._store_transaction_in_db(date, category, amount, transaction_type, payment_method, currency)
 
     def get_transactions(self, target_currency='BGN'):
-        if target_currency == 'BGN':
-            return self.transactions
-        converted_transactions = self.transactions.copy()
-        converted_transactions['Amount'] = converted_transactions.apply(
-            lambda row: self.currency_converter.convert_currency(row['Amount'], row['Currency'], target_currency), axis=1)
-        converted_transactions['Currency'] = target_currency
-        return converted_transactions
+        transactions = self._retrieve_transactions_from_db()
+        transactions_df = pd.DataFrame(transactions, columns=['ID', 'Date', 'Category', 'Amount', 'Type', 'Currency', 'Payment Method'])
+
+        if target_currency != 'BGN' and self.currency_converter:
+            transactions_df['Amount'] = transactions_df.apply(
+                lambda row: self.currency_converter.convert_currency(row['Amount'], row['Currency'], target_currency), axis=1)
+            transactions_df['Currency'] = target_currency
+
+        return transactions_df
 
     def calculate_statistics(self, target_currency='BGN'):
         transactions = self.get_transactions(target_currency)
         expenses = transactions[transactions['Type'] == 'Expense']['Amount']
         income = transactions[transactions['Type'] == 'Income']['Amount']
+
         stats = {
             'Mean Expense': round(sum(expenses, Decimal(0)) / len(expenses), 2) if len(expenses) > 0 else Decimal(0),
             'Median Expense': round(sorted(expenses)[len(expenses) // 2], 2) if len(expenses) > 0 else Decimal(0),
@@ -97,3 +111,27 @@ class TransactionManager:
             future_income = [Decimal(a_inc * (datetime.now() + timedelta(days=i)).toordinal() + b_inc) for i in range(1, days_ahead + 1)]
 
         return future_expenses, future_income
+
+    def _store_transaction_in_db(self, date, category, amount, transaction_type, payment_method, currency):
+        amount_in_BGN = self.currency_converter.convert_currency(amount, currency, 'BGN') if self.currency_converter else amount
+        if self.user is None:
+            raise ValueError("No user logged in")
+        
+        self.cursor.execute('''
+            INSERT INTO transactions (user_id, date, category, amount, type, payment_method_id, currency)
+            VALUES (?, ?, ?, ?, ?, (SELECT id FROM payment_methods WHERE user_id = ? AND method_name = ?), ?)
+        ''', (self.user.user_id, date, category, float(amount_in_BGN), transaction_type, self.user.user_id, payment_method, 'BGN'))
+        
+        self.conn.commit()
+
+    def _retrieve_transactions_from_db(self):
+        if self.user is None:
+            raise ValueError("No user logged in")
+        self.cursor.execute('''
+            SELECT t.id, t.date, t.category, t.amount, t.type, t.currency, pm.method_name
+            FROM transactions t
+            JOIN payment_methods pm ON t.payment_method_id = pm.id
+            WHERE t.user_id = ?
+        ''', (self.user.user_id,))
+        transactions = self.cursor.fetchall()
+        return transactions

@@ -5,13 +5,21 @@ from decimal import Decimal
 from datetime import datetime
 
 class TransactionWindow:
-    def __init__(self, root, finance_manager, refresh_ui_callback):
+    def __init__(self, root, transaction_manager, account_manager, refresh_ui_callback):
         self.root = root
         self.root.title("Manage Transactions")
-        self.finance_manager = finance_manager
+        self.transaction_manager = transaction_manager
+        self.account_manager = account_manager
         self.refresh_ui_callback = refresh_ui_callback
 
         self.create_widgets()
+
+    # Rest of the code remains the same
+
+    def update_payment_methods_combobox(self):
+        payment_methods = self.account_manager.get_payment_methods()
+        self.payment_method_combobox['values'] = payment_methods
+
 
     def create_widgets(self):
         main_frame = ttk.Frame(self.root)
@@ -81,7 +89,7 @@ class TransactionWindow:
             transaction_type = self.type_combobox.get()
             payment_method = self.payment_method_combobox.get()
             currency = self.currency_entry.get()
-            self.finance_manager.add_transaction(date, category, amount, transaction_type, payment_method, currency)
+            self.transaction_manager.add_transaction(date, category, amount, transaction_type, payment_method, currency)
             self.update_transactions_tree()  # Update the transactions tree after adding a transaction
             self.refresh_ui_callback()  # Refresh the main UI
         except Exception as e:
@@ -91,17 +99,18 @@ class TransactionWindow:
         try:
             selected_item = self.transactions_tree.selection()[0]
             transaction_id = self.transactions_tree.item(selected_item)['values'][0]
-            self.finance_manager.remove_transaction(transaction_id)
+            self.transaction_manager.remove_transaction(transaction_id)
             self.update_transactions_tree()  # Update the transactions tree after deleting a transaction
             self.refresh_ui_callback()  # Refresh the main UI
         except IndexError:
             messagebox.showerror("Error", "No transaction selected")
 
     def update_transactions_tree(self):
+        # Clear existing rows
         for item in self.transactions_tree.get_children():
             self.transactions_tree.delete(item)
-        for row in self.finance_manager.get_transactions():
-            self.transactions_tree.insert("", "end", values=row)
 
-    def update_payment_methods_combobox(self):
-        self.payment_method_combobox['values'] = [method[1] for method in self.finance_manager.get_payment_methods()]
+        # Populate with current transactions
+        transactions_df = self.transaction_manager.get_transactions()
+        for index, row in transactions_df.iterrows():
+            self.transactions_tree.insert("", "end", values=(row['ID'], row['Date'], row['Category'], row['Amount'], row['Type'], row['Currency'], row['Payment Method']))

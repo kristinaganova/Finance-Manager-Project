@@ -1,4 +1,8 @@
 import sqlite3
+import os
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATABASE_PATH = os.path.join(BASE_DIR, 'data', 'finance_manager.db')
 
 def initialize_database(db_name='finance_manager.db'):
     conn = sqlite3.connect(db_name)

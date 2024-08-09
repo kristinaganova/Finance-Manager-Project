@@ -1,7 +1,9 @@
 import sqlite3
+from utils.initialize_database import DATABASE_PATH
+
 
 def display_data():
-    conn = sqlite3.connect('finance_manager.db')
+    conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     
     # Display users

@@ -1,15 +1,13 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from tkcalendar import DateEntry
-from finance_manager import FinanceManager
 from decimal import Decimal
-from datetime import datetime
 
 class GoalWindow:
     def __init__(self, root, finance_manager):
         self.root = root
-        self.root.title("Управление на Цели")
-        self.finance_manager = finance_manager
+        self.root.title("Manage Goals")
+        self.goal_manager = finance_manager.goal_manager
 
         self.create_widgets()
 
@@ -54,17 +52,17 @@ class GoalWindow:
         self.goals_tree.column("Due Date", width=100)
         self.goals_tree.column("Completed", width=100)
 
+        self.update_goals_tree()
+
         ttk.Button(frame_display, text="Delete Goal", command=self.delete_goal).grid(row=2, column=0, padx=5, pady=5, sticky="ew")
         ttk.Button(frame_display, text="Mark as Complete", command=self.mark_goal_complete).grid(row=3, column=0, padx=5, pady=5, sticky="ew")
-
-        self.update_goals_tree()
 
     def add_goal(self):
         try:
             goal = self.goal_entry.get()
             target_amount = Decimal(self.target_amount_entry.get())
             due_date = self.due_date_entry.get_date()
-            self.finance_manager.add_goal(goal, target_amount, due_date)
+            self.goal_manager.add_goal(goal, target_amount, due_date)
             self.update_goals_tree()
         except Exception as e:
             messagebox.showerror("Error", str(e))
@@ -73,7 +71,7 @@ class GoalWindow:
         try:
             selected_item = self.goals_tree.selection()[0]
             goal_id = self.goals_tree.item(selected_item, 'values')[0]  # Assuming the first column is the goal ID
-            self.finance_manager.delete_goal(goal_id)
+            self.goal_manager.delete_goal(goal_id)
             self.update_goals_tree()  # Refresh the tree after deletion
         except IndexError:
             messagebox.showerror("Error", "No goal selected")
@@ -82,7 +80,7 @@ class GoalWindow:
         try:
             selected_item = self.goals_tree.selection()[0]
             goal_id = self.goals_tree.item(selected_item, 'values')[0]
-            self.finance_manager.mark_goal_complete(goal_id)
+            self.goal_manager.mark_goal_complete(goal_id)
             self.update_goals_tree()  # Refresh the tree after marking complete
         except IndexError:
             messagebox.showerror("Error", "No goal selected")
@@ -90,8 +88,12 @@ class GoalWindow:
     def update_goals_tree(self):
         for item in self.goals_tree.get_children():
             self.goals_tree.delete(item)
-        for row in self.finance_manager.get_goals():
-            goal_id, goal, target_amount, current_amount, due_date, completed = row
-            completed_text = "Yes" if completed else "No"
-            self.goals_tree.insert("", "end", values=(goal_id, goal, target_amount, current_amount, due_date, completed_text))
-
+        
+        goals_df = self.goal_manager.get_goals()
+        
+        for _, row in goals_df.iterrows():
+            completed_text = "Yes" if row['Completed'] else "No"
+            self.goals_tree.insert(
+                "", "end", 
+                values=(row['ID'], row['Goal'], row['Target Amount'], row['Current Amount'], row['Due Date'], completed_text)
+        )

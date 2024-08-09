@@ -13,7 +13,6 @@ class CurrencyConverter:
             data = response.json()
             return {k: Decimal(v) for k, v in data['conversion_rates'].items()}
         else:
-            print("Error fetching currency rates")
             return {'USD': Decimal('1.0')}  
 
     def convert_currency(self, amount, from_currency, to_currency):
