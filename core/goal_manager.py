@@ -2,6 +2,8 @@ import pandas as pd
 from decimal import Decimal
 import sqlite3
 from utils.initialize_database import DATABASE_PATH
+from plotly import graph_objects as go
+import matplotlib.pyplot as plt
 
 class GoalManager:
     def __init__(self, conn, user):
@@ -91,6 +93,7 @@ class GoalManager:
     def calculate_goal_progress(self):
         self.goals['Progress'] = self.goals.apply(lambda row: round((row['Current Amount'] / row['Target Amount']) * 100, 2), axis=1)
         return self.goals
+        
 
     def forecast_goal_completion(self, days_ahead=30):
         self.goals['Days to Complete'] = self.goals.apply(
@@ -122,3 +125,27 @@ class GoalManager:
             DELETE FROM goals WHERE id = ? AND user_id = ?
         ''', (goal_id, self.user.user_id))
         self.conn.commit()
+
+    def calculate_goal_progress(self):
+        self.goals['Progress'] = self.goals.apply(lambda row: round((row['Current Amount'] / row['Target Amount']) * 100, 2), axis=1)
+        return self.goals
+
+    def forecast_goal_completion(self, days_ahead=30):
+        self.goals['Days to Complete'] = self.goals.apply(
+            lambda row: (row['Target Amount'] - row['Current Amount']) / (row['Current Amount'] / days_ahead)
+            if row['Current Amount'] > 0 else None, axis=1)
+        return self.goals
+    
+    def visualize_goal_gauge(self, goal, target_amount, current_amount):
+        fig = go.Figure(go.Indicator(
+            mode="gauge+number+delta",
+            value=current_amount,
+            domain={'x': [0, 1], 'y': [0, 1]},
+            title={'text': goal},
+            delta={'reference': target_amount},
+            gauge={'axis': {'range': [None, target_amount]},
+                   'bar': {'color': "darkblue"},
+                   'steps': [{'range': [0, target_amount * 0.5], 'color': "lightgray"},
+                             {'range': [target_amount * 0.5, target_amount], 'color': "gray"}],
+                   'threshold': {'line': {'color': "red", 'width': 4}, 'thickness': 0.75, 'value': target_amount}}))
+        fig.show()

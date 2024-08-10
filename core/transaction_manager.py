@@ -3,6 +3,9 @@ from decimal import Decimal
 from datetime import datetime, timedelta
 import sqlite3
 from utils.initialize_database import DATABASE_PATH
+import seaborn as sns
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as  plt
 
 class TransactionManager:
     def __init__(self, conn, user, account_manager, currency_converter=None):
@@ -109,6 +112,13 @@ class TransactionManager:
 
     def forecast(self, days_ahead=30, target_currency='BGN'):
         transactions = self.get_transactions(target_currency)
+        
+        # Convert the Date column to datetime if it's not already
+        transactions['Date'] = pd.to_datetime(transactions['Date'], errors='coerce')
+
+        # Drop any rows where the Date conversion failed
+        transactions = transactions.dropna(subset=['Date'])
+
         transactions['Date_ordinal'] = transactions['Date'].apply(lambda x: x.toordinal())
 
         expenses = transactions[transactions['Type'] == 'Expense']
@@ -147,6 +157,13 @@ class TransactionManager:
             future_income = [Decimal(a_inc * (datetime.now() + timedelta(days=i)).toordinal() + b_inc) for i in range(1, days_ahead + 1)]
 
         return future_expenses, future_income
+
+    
+    def get_total_income_and_expense(self):
+        transactions = self.get_transactions() 
+        income_total = transactions[transactions['Type'] == 'Income']['Amount'].sum()
+        expense_total = transactions[transactions['Type'] == 'Expense']['Amount'].sum()
+        return income_total, expense_total
 
     def _store_transaction_in_db(self, date, category, amount, transaction_type, payment_method, currency):
         amount_in_BGN = self.currency_converter.convert_currency(amount, currency, 'BGN') if self.currency_converter and currency != 'BGN' else amount

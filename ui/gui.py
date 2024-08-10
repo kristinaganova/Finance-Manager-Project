@@ -5,7 +5,6 @@ from core.user import User
 from decimal import Decimal
 from .transaction_window import TransactionWindow
 from .goal_window import GoalWindow
-from .visualization_window import VisualizationWindow
 from utils.initialize_database import initialize_database
 from .payment_method_window import PaymentMethodsWindow
 
@@ -13,9 +12,7 @@ class FinanceApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Finance Manager")
-        # Load data
         self.finance_manager = FinanceManager()
-
         self.create_login_widgets()
 
     def create_login_widgets(self):
@@ -79,7 +76,6 @@ class FinanceApp:
 
         ttk.Button(main_frame, text="Manage Transactions", command=self.open_transaction_window).grid(row=3, column=0, padx=10, pady=10)
         ttk.Button(main_frame, text="Manage Goals", command=self.open_goal_window).grid(row=3, column=1, padx=10, pady=10)
-        ttk.Button(main_frame, text="Reports and Charts", command=self.open_visualization_window).grid(row=3, column=2, padx=10, pady=10)
         ttk.Button(main_frame, text="Manage Payment Methods", command=self.open_payment_methods_window).grid(row=3, column=3, padx=10, pady=10)
         self.refresh_ui()
 
@@ -110,10 +106,6 @@ class FinanceApp:
     def open_goal_window(self):
         goal_window = tk.Toplevel(self.root)
         GoalWindow(goal_window, self.finance_manager, self.refresh_ui)
-
-    def open_visualization_window(self):
-        visualization_window = tk.Toplevel(self.root)
-        VisualizationWindow(visualization_window, self.finance_manager)
 
     def open_payment_methods_window(self):
         payment_methods_window = tk.Toplevel(self.root)

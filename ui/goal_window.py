@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from tkcalendar import DateEntry
 from decimal import Decimal
+import matplotlib.pyplot as plt
 
 class GoalWindow:
     def __init__(self, root, finance_manager, refresh_ui_callback):
@@ -85,6 +86,11 @@ class GoalWindow:
         ttk.Button(frame_display, text="Delete Goal", command=self.delete_goal).grid(row=2, column=0, padx=5, pady=5, sticky="ew")
         ttk.Button(frame_display, text="Mark as Complete", command=self.mark_goal_complete).grid(row=3, column=0, padx=5, pady=5, sticky="ew")
 
+
+        ttk.Button(frame_display, text="Visualize Goal Progress", command=self.visualize_goal_progress).grid(row=4, column=0, padx=5, pady=5, sticky="ew")
+        ttk.Button(frame_display, text="Visualize Goal Forecast", command=self.visualize_goal_forecasts).grid(row=5, column=0, padx=5, pady=5, sticky="ew")
+        ttk.Button(frame_display, text="Goal Gauge", command=self.visualize_goal_gauge).grid(row=6, column=0, padx=5, pady=5, sticky= 'ew')
+
     def add_goal(self):
         try:
             goal = self.goal_entry.get()
@@ -93,9 +99,9 @@ class GoalWindow:
             initial_deposit = Decimal(self.initial_deposit_entry.get())
             from_payment_method = self.payment_method_combobox.get()
 
+            self.account_manager.add_payment_method(goal, "cash", initial_balance=initial_deposit)
             if initial_deposit > 0:
-                self.account_manager.update_balance(from_payment_method, -initial_deposit, "Expense")
-                self.account_manager.add_payment_method(goal, "cash", initial_balance=initial_deposit)
+                self.account_manager.update_balance(from_payment_method, initial_deposit, "Expense")
 
             self.goal_manager.add_goal(goal, target_amount, due_date, initial_deposit)
 
@@ -113,10 +119,7 @@ class GoalWindow:
             from_payment_method = self.add_payment_method_combobox.get()
 
             if amount_to_add > 0:
-                # Withdraw money from the selected payment method
-                self.account_manager.update_balance(from_payment_method, -amount_to_add, "Expense")
-
-                # Add money to the goal
+                self.account_manager.update_balance(from_payment_method, amount_to_add, "Expense")
                 goal_name = self.goal_manager.get_goal_name(goal_id)
                 self.account_manager.update_balance(goal_name, amount_to_add, "Income")
                 self.goal_manager.update_goal(goal_id, amount_to_add)
@@ -176,3 +179,27 @@ class GoalWindow:
                 "", "end", 
                 values=(row['ID'], row['Goal'], row['Target Amount'], row['Current Amount'], row['Due Date'], completed_text)
             )
+
+    def visualize_goal_progress(self):
+        goal_progress = self.goal_manager.calculate_goal_progress()
+        goal_progress.plot(kind='bar', x='Goal', y='Progress', color='blue', figsize=(10, 5))
+        plt.title('Goal Progress')
+        plt.xlabel('Goals')
+        plt.ylabel('Progress (%)')
+        plt.show()
+
+    def visualize_goal_forecasts(self):
+        goal_forecasts = self.goal_manager.forecast_goal_completion()
+        goal_forecasts.plot(kind='bar', x='Goal', y='Days to Complete', color='orange', figsize=(10, 5))
+        plt.title('Goal Completion Forecast')
+        plt.xlabel('Goals')
+        plt.ylabel('Days to Complete')
+        plt.show()
+
+    def visualize_goal_gauge(self):
+        try:
+            goals_df = self.goal_manager.get_goals()
+            for _, row in goals_df.iterrows():
+                self.goal_manager.visualize_goal_gauge(row['Goal'], row['Target Amount'], row['Current Amount'])
+        except Exception as e:
+            messagebox.showerror("Error", str(e))

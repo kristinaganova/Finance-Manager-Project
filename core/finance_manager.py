@@ -5,7 +5,6 @@ from .transaction_manager import TransactionManager
 from .goal_manager import GoalManager
 from .user import User
 from utils.initialize_database import DATABASE_PATH
-from utils.visualizer import Visualizer
 
 class FinanceManager:
     def __init__(self, db_path=DATABASE_PATH):
@@ -15,7 +14,6 @@ class FinanceManager:
         self.account_manager = None
         self.transaction_manager = None
         self.goal_manager = None
-        self.visualizer = Visualizer()
         self.currency_converter = CurrencyConverter()
 
     def set_user(self, user):
