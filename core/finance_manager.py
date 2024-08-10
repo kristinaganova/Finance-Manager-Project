@@ -86,13 +86,5 @@ class FinanceManager:
 
         return report
 
-    def visualize_report(self):
-        report = self.generate_statistics_report()
-        self.visualizer.visualize_statistics(report["Transaction Statistics"])
-        self.visualizer.visualize_correlations(report["Correlations"])
-        self.visualizer.visualize_forecast(report["Future Forecast"]["Expenses"], report["Future Forecast"]["Income"])
-        self.visualizer.visualize_goal_progress(report["Goal Progress"])
-        self.visualizer.visualize_goal_forecasts(report["Goal Forecasts"])
-
     def __del__(self):
         self.conn.close()
