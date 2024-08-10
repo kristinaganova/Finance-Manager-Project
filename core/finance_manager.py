@@ -8,7 +8,7 @@ from utils.initialize_database import DATABASE_PATH
 from utils.visualizer import Visualizer
 
 class FinanceManager:
-    def __init__(self, db_path = DATABASE_PATH):
+    def __init__(self, db_path=DATABASE_PATH):
         self.conn = sqlite3.connect(db_path)
         self.cursor = self.conn.cursor()
         self.current_user = None
@@ -21,7 +21,7 @@ class FinanceManager:
     def set_user(self, user):
         self.current_user = user
         self.account_manager = AccountManager(self.conn, self.current_user)
-        self.transaction_manager = TransactionManager(self.conn, self.current_user)
+        self.transaction_manager = TransactionManager(self.conn, self.current_user, self.account_manager, self.currency_converter)
         self.goal_manager = GoalManager(self.conn, self.current_user)
 
     def get_goals(self):

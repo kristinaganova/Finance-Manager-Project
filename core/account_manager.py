@@ -56,27 +56,46 @@ class AccountManager:
 
     def remove_payment_method(self, method_name):
         if method_name in self.accounts['cash']:
-            # Просто премахваме метода и свързания баланс
             del self.accounts['cash'][method_name]
         elif method_name in self.accounts['cards']:
-            # Просто премахваме метода и свързания баланс
             del self.accounts['cards'][method_name]
         else:
             raise ValueError("Payment method not found.")
 
-        # Премахване на метода от базата данни
         self._remove_payment_method_from_db(method_name)
 
 
     def update_balance(self, payment_method, amount, transaction_type):
         if not isinstance(amount, Decimal):
             amount = Decimal(str(amount))
+        
         if payment_method in self.accounts['cash']:
-            self._update_cash_balance(payment_method, amount, transaction_type)
+            if transaction_type == 'Income':
+                self.accounts['cash'][payment_method] += amount
+            elif transaction_type == 'Expense':
+                self.accounts['cash'][payment_method] -= amount
         elif payment_method in self.accounts['cards']:
-            self._update_card_balance(payment_method, amount, transaction_type)
+            if transaction_type == 'Income':
+                self.accounts['cards'][payment_method] += amount
+            elif transaction_type == 'Expense':
+                self.accounts['cards'][payment_method] -= amount
         else:
             raise ValueError("Payment method not recognized.")
+
+        self._update_balance_in_db(payment_method)
+
+    def _update_balance_in_db(self, method_name):
+        if method_name in self.accounts['cash']:
+            balance = self.accounts['cash'][method_name]
+        elif method_name in self.accounts['cards']:
+            balance = self.accounts['cards'][method_name]
+        else:
+            raise ValueError("Payment method not found.")
+
+        self.cursor.execute('''
+            UPDATE payment_methods SET balance = ? WHERE user_id = ? AND method_name = ?
+        ''', (float(balance), self.user.user_id, method_name))
+        self.conn.commit()
 
     def _store_payment_method_in_db(self, method_name, method_type, balance):
         if self.user is None:

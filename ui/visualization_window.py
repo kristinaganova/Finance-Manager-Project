@@ -12,6 +12,7 @@ class VisualizationWindow:
 
         self.create_widgets()
 
+#TO DO:
     def create_widgets(self):
         main_frame = ttk.Frame(self.root)
         main_frame.pack(fill=tk.BOTH, expand=True)

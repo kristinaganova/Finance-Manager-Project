@@ -88,9 +88,10 @@ class TransactionWindow:
             currency = self.currency_entry.get()
             self.transaction_manager.add_transaction(date, category, amount, transaction_type, payment_method, currency)
             self.update_transactions_tree() 
-            self.refresh_ui_callback() 
+            self.refresh_ui_callback()  # Ensure this is called to refresh the main window
         except Exception as e:
             messagebox.showerror("Error", str(e))
+
 
     def delete_transaction(self):
         try:

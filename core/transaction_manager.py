@@ -5,10 +5,11 @@ import sqlite3
 from utils.initialize_database import DATABASE_PATH
 
 class TransactionManager:
-    def __init__(self, conn, user, currency_converter=None):
+    def __init__(self, conn, user, account_manager, currency_converter=None):
         self.conn = conn
         self.cursor = self.conn.cursor()
         self.user = user
+        self.account_manager = account_manager  
         self.currency_converter = currency_converter
         self.transactions = self.load_transactions()
 
@@ -27,16 +28,51 @@ class TransactionManager:
     def remove_transaction(self, transaction_id):
         if self.user is None:
             raise ValueError("No user logged in")
+
+        self.cursor.execute('''
+            SELECT amount, type, payment_method_id
+            FROM transactions
+            WHERE id = ? AND user_id = ?
+        ''', (transaction_id, self.user.user_id))
+        transaction = self.cursor.fetchone()
+
+        if not transaction:
+            raise ValueError("Transaction not found.")
+
+        amount, transaction_type, payment_method_id = transaction
+
+        self.cursor.execute('''
+            SELECT method_name
+            FROM payment_methods
+            WHERE id = ? AND user_id = ?
+        ''', (payment_method_id, self.user.user_id))
+        payment_method_name = self.cursor.fetchone()[0]
+
+        self.account_manager.update_balance(payment_method_name, Decimal(amount), transaction_type)
+
         self.cursor.execute('''
             DELETE FROM transactions
             WHERE id = ? AND user_id = ?
         ''', (transaction_id, self.user.user_id))
         self.conn.commit()
 
+        self.transactions = self.load_transactions()
+
     def add_transaction(self, date, category, amount, transaction_type, payment_method, currency='BGN'):
         if self.user is None:
             raise ValueError("No user logged in")
-        self._store_transaction_in_db(date, category, amount, transaction_type, payment_method, currency)
+        
+        amount_in_BGN = self.currency_converter.convert_currency(amount, currency, 'BGN') if self.currency_converter else amount
+        
+        self._store_transaction_in_db(date, category, amount_in_BGN, transaction_type, payment_method, currency)
+        
+        if transaction_type == 'Income':
+            self.account_manager.update_balance(payment_method, amount_in_BGN, 'Income')
+        elif transaction_type == 'Expense':
+            self.account_manager.update_balance(payment_method, amount_in_BGN, 'Expense')
+        
+        self.transactions = self.load_transactions()
+
 
     def get_transactions(self, target_currency='BGN'):
         transactions = self._retrieve_transactions_from_db()
@@ -44,7 +80,7 @@ class TransactionManager:
 
         if target_currency != 'BGN' and self.currency_converter:
             transactions_df['Amount'] = transactions_df.apply(
-                lambda row: self.currency_converter.convert_currency(row['Amount'], row['Currency'], target_currency), axis=1)
+                lambda row: self.currency_converter.convert_currency(Decimal(row['Amount']), 'BGN', target_currency), axis=1)
             transactions_df['Currency'] = target_currency
 
         return transactions_df
@@ -113,14 +149,14 @@ class TransactionManager:
         return future_expenses, future_income
 
     def _store_transaction_in_db(self, date, category, amount, transaction_type, payment_method, currency):
-        amount_in_BGN = self.currency_converter.convert_currency(amount, currency, 'BGN') if self.currency_converter else amount
+        amount_in_BGN = self.currency_converter.convert_currency(amount, currency, 'BGN') if self.currency_converter and currency != 'BGN' else amount
         if self.user is None:
             raise ValueError("No user logged in")
         
         self.cursor.execute('''
             INSERT INTO transactions (user_id, date, category, amount, type, payment_method_id, currency)
             VALUES (?, ?, ?, ?, ?, (SELECT id FROM payment_methods WHERE user_id = ? AND method_name = ?), ?)
-        ''', (self.user.user_id, date, category, float(amount_in_BGN), transaction_type, self.user.user_id, payment_method, 'BGN'))
+        ''', (self.user.user_id, date, category, float(amount_in_BGN), transaction_type, self.user.user_id, payment_method, currency))
         
         self.conn.commit()
 
