@@ -1,9 +1,9 @@
-# Finance-Manager-Project
+## Finance-Manager-Project
 
-Описание на Проекта
+#Описание на Проекта
 Финансов Мениджър е настолно приложение, създадено за управление на лични финанси. Приложението предоставя функционалности за проследяване на транзакции, управление на цели за спестяване, както и управление на различни методи на плащане като банкови карти и пари в брой. В допълнение, приложението предлага визуализации и отчети, които помагат на потребителя да разбере по-добре своите финанси и да планира бъдещето си.
 
-Основни Функционалности
+#Основни Функционалности
 1. Управление на Потребители
 Регистрация: Позволява на нови потребители да създадат акаунт с потребителско име и парола.
 Вход: Позволява на съществуващи потребители да влязат в акаунта си чрез потребителско име и парола.
@@ -33,25 +33,25 @@ GUI: Tkinter
 Пакети за Визуализация: Matplotlib, Seaborn, Plotly
 Криптиране на Пароли: bcrypt
 
-Структура на Проекта
+#Структура на Проекта
 finance_manager/
 ├── core/
-│   ├── account_manager.py
-│   ├── currency_converter.py
-│   ├── finance_manager.py
-│   ├── goal_manager.py
-│   ├── transaction_manager.py
-│   └── user.py
+│ ├── account_manager.py
+│ ├── currency_converter.py
+│ ├── finance_manager.py
+│ ├── goal_manager.py
+│ ├── transaction_manager.py
+│ └── user.py
 ├── ui/
-│   ├── gui.py
-│   ├── goal_window.py
-│   ├── transaction_window.py
-│   ├── payment_method_window.py
+│ ├── gui.py
+│ ├── goal_window.py
+│ ├── transaction_window.py
+│ ├── payment_method_window.py
 ├── utils/
-│   ├── initialize_database.py
+│ ├── initialize_database.py
 └── README.md
 
-Основни Модули
+#Основни Модули
 core/account_manager.py: Управлява методите на плащане и баланса им.
 core/currency_converter.py: Обработва конвертирането на валути.
 core/finance_manager.py: Централен мениджър, който интегрира всички други мениджъри.
