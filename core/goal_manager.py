@@ -25,15 +25,30 @@ class GoalManager:
         self.user = user
         self.goals = self.load_goals()  # Reload goals for the new user
 
-    def add_goal(self, goal, target_amount, due_date):
+    def add_goal(self, goal, target_amount, due_date, initial_amount=0):
         if not isinstance(target_amount, Decimal):
             target_amount = Decimal(str(target_amount))
-        self._store_goal_in_db(goal, target_amount, due_date)
+        self._store_goal_in_db(goal, target_amount, due_date, initial_amount)
         self.goals = self.load_goals()  # Reload goals after adding
 
     def mark_goal_complete(self, goal_id):
-        self._update_goal_status(goal_id, completed=True)
-        self.goals = self.load_goals()  # Reload goals after update
+        # Get current and target amounts
+        self.cursor.execute('''
+            SELECT current_amount, target_amount
+            FROM goals
+            WHERE id = ? AND user_id = ?
+        ''', (goal_id, self.user.user_id))
+        result = self.cursor.fetchone()
+
+        if result:
+            current_amount, target_amount = Decimal(result[0]), Decimal(result[1])
+            if current_amount >= target_amount:
+                self._update_goal_status(goal_id, completed=True)
+                self.goals = self.load_goals()  # Reload goals after update
+            else:
+                raise ValueError("Cannot mark goal as complete. The current amount has not reached the target amount.")
+        else:
+            raise ValueError("Goal not found.")
 
     def delete_goal(self, goal_id):
         self._remove_goal_from_db(goal_id)
@@ -49,6 +64,29 @@ class GoalManager:
 
     def get_goals(self):
         return self.goals
+    
+    def get_goal_balance(self, goal_id):
+        self.cursor.execute('''
+            SELECT current_amount
+            FROM goals
+            WHERE id = ? AND user_id = ?
+        ''', (goal_id, self.user.user_id))
+        result = self.cursor.fetchone()
+        if result:
+            return Decimal(result[0])
+        return Decimal(0)
+    
+    def get_goal_name(self, goal_id):
+        self.cursor.execute('''
+            SELECT goal
+            FROM goals
+            WHERE id = ? AND user_id = ?
+        ''', (goal_id, self.user.user_id))
+        result = self.cursor.fetchone()
+        if result:
+            return result[0]
+        else:
+            raise ValueError("Goal not found.")
 
     def calculate_goal_progress(self):
         self.goals['Progress'] = self.goals.apply(lambda row: round((row['Current Amount'] / row['Target Amount']) * 100, 2), axis=1)
@@ -60,11 +98,11 @@ class GoalManager:
             if row['Current Amount'] > 0 else None, axis=1)
         return self.goals
 
-    def _store_goal_in_db(self, goal, target_amount, due_date):
+    def _store_goal_in_db(self, goal, target_amount, due_date, initial_amount=0):
         self.cursor.execute('''
             INSERT INTO goals (user_id, goal, target_amount, current_amount, due_date, completed)
             VALUES (?, ?, ?, ?, ?, 0)
-        ''', (self.user.user_id, goal, float(target_amount), 0, due_date))
+        ''', (self.user.user_id, goal, float(target_amount), float(initial_amount), due_date))
         self.conn.commit()
 
     def _update_goal_amount_in_db(self, goal_id, amount):

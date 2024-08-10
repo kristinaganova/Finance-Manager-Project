@@ -109,7 +109,7 @@ class FinanceApp:
 
     def open_goal_window(self):
         goal_window = tk.Toplevel(self.root)
-        GoalWindow(goal_window, self.finance_manager)
+        GoalWindow(goal_window, self.finance_manager, self.refresh_ui)
 
     def open_visualization_window(self):
         visualization_window = tk.Toplevel(self.root)
