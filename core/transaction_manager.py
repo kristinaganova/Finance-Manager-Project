@@ -51,7 +51,10 @@ class TransactionManager:
         ''', (payment_method_id, self.user.user_id))
         payment_method_name = self.cursor.fetchone()[0]
 
-        self.account_manager.update_balance(payment_method_name, Decimal(amount), transaction_type)
+        if transaction_type == 'Expense':
+            self.account_manager.update_balance(payment_method_name, Decimal(amount), 'Income')
+        elif transaction_type == 'Income':
+            self.account_manager.update_balance(payment_method_name, Decimal(amount), 'Expense')
 
         self.cursor.execute('''
             DELETE FROM transactions
@@ -77,16 +80,44 @@ class TransactionManager:
         self.transactions = self.load_transactions()
 
 
-    def get_transactions(self, target_currency='BGN'):
-        transactions = self._retrieve_transactions_from_db()
+    def get_transactions(self, target_currency='BGN', start_date=None, end_date=None, category=None, payment_method=None):
+        query = '''
+            SELECT t.id, t.date, t.category, t.amount, t.type, t.currency, pm.method_name
+            FROM transactions t
+            JOIN payment_methods pm ON t.payment_method_id = pm.id
+            WHERE t.user_id = ?
+        '''
+        
+        filters = [self.user.user_id]
+        
+        if start_date:
+            query += " AND t.date >= ?"
+            filters.append(start_date)
+        
+        if end_date:
+            query += " AND t.date <= ?"
+            filters.append(end_date)
+        
+        if category:
+            query += " AND t.category = ?"
+            filters.append(category)
+        
+        if payment_method:
+            query += " AND pm.method_name = ?"
+            filters.append(payment_method)
+
+        self.cursor.execute(query, filters)
+        transactions = self.cursor.fetchall()
+
         transactions_df = pd.DataFrame(transactions, columns=['ID', 'Date', 'Category', 'Amount', 'Type', 'Currency', 'Payment Method'])
 
         if target_currency != 'BGN' and self.currency_converter:
             transactions_df['Amount'] = transactions_df.apply(
-                lambda row: self.currency_converter.convert_currency(Decimal(row['Amount']), 'BGN', target_currency), axis=1)
+                lambda row: self.currency_converter.convert_currency(Decimal(row['Amount']), row['Currency'], target_currency), axis=1)
             transactions_df['Currency'] = target_currency
 
         return transactions_df
+
 
     def calculate_statistics(self, target_currency='BGN'):
         transactions = self.get_transactions(target_currency)
@@ -113,10 +144,8 @@ class TransactionManager:
     def forecast(self, days_ahead=30, target_currency='BGN'):
         transactions = self.get_transactions(target_currency)
         
-        # Convert the Date column to datetime if it's not already
         transactions['Date'] = pd.to_datetime(transactions['Date'], errors='coerce')
 
-        # Drop any rows where the Date conversion failed
         transactions = transactions.dropna(subset=['Date'])
 
         transactions['Date_ordinal'] = transactions['Date'].apply(lambda x: x.toordinal())

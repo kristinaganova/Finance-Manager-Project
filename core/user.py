@@ -1,4 +1,5 @@
 import sqlite3
+import bcrypt
 
 class User:
     def __init__(self, user_id, username):
@@ -10,10 +11,11 @@ class User:
         conn = sqlite3.connect('finance_manager.db')
         cursor = conn.cursor()
         try:
+            hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()) if password else b''
             cursor.execute('''
                 INSERT INTO users (username, password)
                 VALUES (?, ?)
-            ''', (username, password))
+            ''', (username, hashed_password))
             conn.commit()
             return User(cursor.lastrowid, username)
         except sqlite3.IntegrityError:
@@ -26,11 +28,16 @@ class User:
         conn = sqlite3.connect('finance_manager.db')
         cursor = conn.cursor()
         cursor.execute('''
-            SELECT id, username FROM users
-            WHERE username = ? AND password = ?
-        ''', (username, password))
+            SELECT id, username, password FROM users
+            WHERE username = ?
+        ''', (username,))
         user = cursor.fetchone()
         conn.close()
+
         if user:
-            return User(user[0], user[1])
+            stored_password = user[2]
+            if not stored_password: 
+                return User(user[0], user[1])
+            elif bcrypt.checkpw(password.encode('utf-8'), stored_password):
+                return User(user[0], user[1])
         return None

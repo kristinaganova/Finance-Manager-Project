@@ -24,7 +24,7 @@ class PaymentMethodsWindow:
         self.method_name_entry.grid(row=0, column=1, padx=5, pady=5)
 
         ttk.Label(frame_payment_methods, text="Method Type:").grid(row=1, column=0, padx=5, pady=5)
-        self.method_type_combobox = ttk.Combobox(frame_payment_methods, values=["cash", "card"], width=10)
+        self.method_type_combobox = ttk.Combobox(frame_payment_methods, values=["cash", "card"], width=10, state="readonly")
         self.method_type_combobox.grid(row=1, column=1, padx=5, pady=5)
 
         ttk.Label(frame_payment_methods, text="Initial Balance:").grid(row=2, column=0, padx=5, pady=5)
@@ -51,24 +51,30 @@ class PaymentMethodsWindow:
         ttk.Button(frame_display, text="Delete Payment Method", command=self.delete_payment_method).grid(row=1, column=0, padx=5, pady=5)
 
     def add_payment_method(self):
-        method_name = self.method_name_entry.get()
-        method_type = self.method_type_combobox.get()
-        initial_balance = self.initial_balance_entry.get()
+        method_name = self.method_name_entry.get().strip()
+        method_type = self.method_type_combobox.get().strip()
+        initial_balance = self.initial_balance_entry.get().strip()
 
-        if method_name and method_type in ["cash", "card"]:
-            try:
-                initial_balance_decimal = Decimal(initial_balance)
-                self.account_manager.add_payment_method(method_name, method_type, initial_balance=initial_balance_decimal)
-                messagebox.showinfo("Success", f"Payment method '{method_name}' added successfully.")
-                self.method_name_entry.delete(0, tk.END)
-                self.method_type_combobox.set("")
-                self.initial_balance_entry.delete(0, tk.END)
-                self.update_methods_tree()  
-                self.refresh_ui_callback()  
-            except Exception as e:
-                messagebox.showerror("Error", str(e))
-        else:
-            messagebox.showerror("Error", "Please enter valid payment method details.")
+        if not method_name or not method_type or not initial_balance:
+            messagebox.showerror("Error", "Please fill in all fields.")
+            return
+
+        try:
+            initial_balance_decimal = Decimal(initial_balance)
+            if initial_balance_decimal < 0:
+                raise ValueError("Initial balance cannot be negative.")
+            
+            self.account_manager.add_payment_method(method_name, method_type, initial_balance=initial_balance_decimal)
+            messagebox.showinfo("Success", f"Payment method '{method_name}' added successfully.")
+            self.method_name_entry.delete(0, tk.END)
+            self.method_type_combobox.set("")
+            self.initial_balance_entry.delete(0, tk.END)
+            self.update_methods_tree()  
+            self.refresh_ui_callback()  
+        except ValueError as ve:
+            messagebox.showerror("Error", f"Invalid initial balance: {str(ve)}")
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
 
     def delete_payment_method(self):
         try:
@@ -79,6 +85,8 @@ class PaymentMethodsWindow:
             self.refresh_ui_callback()  
         except IndexError:
             messagebox.showerror("Error", "No payment method selected")
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
 
     def update_methods_tree(self):
         for item in self.methods_tree.get_children():
