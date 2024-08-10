@@ -93,7 +93,7 @@ class TransactionWindow:
         ttk.Button(frame_visualization, text="Time Series", command=self.visualize_time_series).grid(row=7, column=0, padx=5, pady=5, sticky='ew')
         ttk.Button(frame_visualization, text="Distribution", command=self.visualize_distribution).grid(row=8, column=0, padx=5, pady=5, sticky='ew')
         ttk.Button(frame_visualization, text="Forecast", command=self.vizualize_forecast).grid(row=9, column=0, padx=5, pady=5, sticky='ew')
-
+        ttk.Button(frame_visualization, text="Visualize Correlations", command=self.visualize_correlations).grid(row=10, column=0, padx=5, pady=5, sticky='ew')
 
     def add_transaction(self):
         try:
@@ -244,5 +244,15 @@ class TransactionWindow:
             plt.grid(True)
             plt.show()
 
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+    def visualize_correlations(self):
+        try:
+            correlation_matrix = self.transaction_manager.calculate_correlations()
+            plt.figure(figsize=(10, 8))
+            sns.heatmap(correlation_matrix.astype(float), annot=True, cmap='coolwarm', center=0)
+            plt.title('Correlation Matrix of Expenses by Category')
+            plt.show()
         except Exception as e:
             messagebox.showerror("Error", str(e))

@@ -6,6 +6,7 @@ from utils.initialize_database import DATABASE_PATH
 import seaborn as sns
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as  plt
+import numpy as np
 
 class TransactionManager:
     def __init__(self, conn, user, account_manager, currency_converter=None):
@@ -217,3 +218,36 @@ class TransactionManager:
         ''', (self.user.user_id,))
         transactions = self.cursor.fetchall()
         return transactions
+    
+    def calculate_correlations(self, target_currency='BGN'):
+        transactions = self.get_transactions(target_currency)
+        expenses = transactions[transactions['Type'] == 'Expense']
+        expenses_by_category = expenses.pivot_table(
+            values='Amount', index='Date', columns='Category', aggfunc='sum', fill_value=Decimal(0)
+        )
+
+        expenses_by_category = expenses_by_category.astype(float)
+
+        correlation_matrix = pd.DataFrame(index=expenses_by_category.columns, columns=expenses_by_category.columns)
+
+        for col1 in expenses_by_category.columns:
+            for col2 in expenses_by_category.columns:
+                correlation_matrix.loc[col1, col2] = self.pearson_correlation(
+                    expenses_by_category[col1], expenses_by_category[col2]
+                )
+        return correlation_matrix
+
+    def pearson_correlation(self, x, y):
+        x = x.astype(float)
+        y = y.astype(float)
+
+        mean_x = np.mean(x)
+        mean_y = np.mean(y)
+
+        numerator = np.sum((x - mean_x) * (y - mean_y))
+        denominator = np.sqrt(np.sum((x - mean_x) ** 2) * np.sum((y - mean_y) ** 2))
+
+        if denominator == 0:
+            return 0
+        else:
+            return numerator / denominator
