@@ -135,13 +135,6 @@ class TransactionManager:
         }
         return stats
 
-    def calculate_correlations(self, target_currency='BGN'):
-        transactions = self.get_transactions(target_currency)
-        expenses = transactions[transactions['Type'] == 'Expense']
-        expenses_by_category = expenses.pivot_table(values='Amount', index='Date', columns='Category', aggfunc='sum', fill_value=Decimal(0))
-        correlations = expenses_by_category.corr()
-        return correlations
-
     def forecast(self, days_ahead=30, target_currency='BGN'):
         transactions = self.get_transactions(target_currency)
         
